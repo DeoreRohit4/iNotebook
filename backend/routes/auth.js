@@ -4,6 +4,7 @@ const User = require("../models/User");
 const { body, validationResult } = require("express-validator");
 const bcrypt = require("bcryptjs");
 var jwt = require("jsonwebtoken");
+const fetchuser = require("../middleware/fetchuser");
 
 const JWT_SECRET = " ";
 //Create a User  using:POST "api/auth/createuser". Login not require
@@ -54,8 +55,59 @@ router.post(
       res.json({ authToken });
     } catch (error) {
       console.error(error.message);
-      res.status(500).send("Some error occured");
+      res.status(500).send("Internal Server Error");
     }
   }
 );
+//Authenticate a User  using:POST "api/auth/login". Login not require
+router.post(
+  "/login",
+  [body("email", "Enter a valid name").isEmail()],
+  [body("password", "Password can not be blank").exists()],
+  async (req, res) => {
+    // if there  are errors return the bad request and the errors.
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    const { email, password } = req.body;
+    try {
+      let user = await User.findOne({ email });
+      if (!user) {
+        return res
+          .status(400)
+          .json({ error: "Please login with correct credentials" });
+      }
+      const passwordCompare = await bcrypt.compare(password, user.password);
+      if (!passwordCompare) {
+        return res
+          .status(400)
+          .json({ error: "Please login with correct credentials" });
+      }
+      const data = {
+        user: {
+          id: user.id,
+        },
+      };
+
+      const authToken = jwt.sign(data, JWT_SECRET);
+      res.json({ authToken });
+    } catch (error) {
+      console.error(error.message);
+      res.status(500).send("Internal Server Error");
+    }
+  }
+);
+
+//Route 3: Get logged in user detailes using:POST "api/auth/getuser". Login require
+router.post("/getuser", fetchuser, async (req, res) => {
+  try {
+    userId = req.user.id;
+    const user = await User.findById(userId).select("-password");
+    res.send(user);
+  } catch (error) {
+    console.error(error.message);
+    res.status(500).send("Internal Server Error");
+  }
+});
 module.exports = router;
