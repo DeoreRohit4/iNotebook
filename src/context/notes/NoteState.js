@@ -92,9 +92,16 @@ const NoteState = (props) => {
     setNotes(notes.concat(note));
   };
   //Delete Note
-  const deleteNote = () => {};
+  const deleteNote = (id) => {
+    //TODO API CALL
+    console.log(`Deleting the node with id ${id}`);
+    const newNotes = notes.filter((note) => {
+      return note._id !== id;
+    });
+    setNotes(newNotes);
+  };
   //Edit Note
-  const editNote = () => {};
+  const editNote = (id, title, description, tag) => {};
   //-------------------------------
   const [notes, setNotes] = useState(notesInitial);
   return (
